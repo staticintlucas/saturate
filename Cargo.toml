@@ -1,0 +1,11 @@
+[package]
+name = "saturate"
+version = "0.1.0"
+authors = ["Lucas Jansen"]
+edition = "2018"
+rust-version = "1.45"
+description = "Rust traits for saturating conversion between numeric types"
+repository = "https://github.com/staticintlucas/saturate"
+license = "MIT OR Apache-2.0"
+keywords = ["saturation", "float", "integer", "conversion"]
+categories = ["encoding", "mathematics", "rust-patterns"]
