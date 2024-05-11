@@ -9,3 +9,6 @@ repository = "https://github.com/staticintlucas/saturate"
 license = "MIT OR Apache-2.0"
 keywords = ["saturation", "float", "integer", "conversion"]
 categories = ["encoding", "mathematics", "rust-patterns"]
+
+[dev-dependencies]
+isclose = "0.1"

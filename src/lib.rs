@@ -15,7 +15,7 @@ macro_rules! impl_self {
     };
 }
 
-impl_self!(f64, f32, usize, isize, u128, i128, u64, i64, u32, i32, u16, i16, u8, i8, bool);
+impl_self!(bool, i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, isize, usize, f64, f32);
 
 macro_rules! impl_from {
     ([$($src:ty),+] => $dst:ty) => {
@@ -31,19 +31,19 @@ macro_rules! impl_from {
 }
 
 impl_from!([bool] => u8);
-impl_from!([u8, bool] => u16);
-impl_from!([u16, u8, bool] => u32);
-impl_from!([u32, u16, u8, bool] => u64);
-impl_from!([u64, u32, u16, u8, bool] => u128);
+impl_from!([bool, u8] => u16);
+impl_from!([bool, u8, u16] => u32);
+impl_from!([bool, u8, u16, u32] => u64);
+impl_from!([bool, u8, u16, u32, u64] => u128);
 
 impl_from!([bool] => i8);
-impl_from!([u8, i8, bool] => i16);
-impl_from!([u16, i16, u8, i8, bool] => i32);
-impl_from!([u32, i32, u16, i16, u8, i8, bool] => i64);
-impl_from!([u64, i64, u32, i32, u16, i16, u8, i8, bool] => i128);
+impl_from!([bool, i8, u8] => i16);
+impl_from!([bool, i8, u8, i16, u16] => i32);
+impl_from!([bool, i8, u8, i16, u16, i32, u32] => i64);
+impl_from!([bool, i8, u8, i16, u16, i32, u32, i64, u64] => i128);
 
-impl_from!([u16, i16, u8, i8] => f32);
-impl_from!([f32, u32, i32, u16, i16, u8, i8] => f64);
+impl_from!([i8, u8, i16, u16] => f32);
+impl_from!([i8, u8, i16, u16, i32, u32, f32] => f64);
 
 macro_rules! impl_clamp {
     ([$($src:ty),+] => $dst:ty) => {
@@ -52,6 +52,7 @@ macro_rules! impl_clamp {
                 #[inline]
                 fn saturating_from(src: $src) -> $dst {
                     use core::convert::TryFrom;
+                    // try_from(..).unwrap() is optimised out (tested on 1.78 with opt-level=2)
                     <$dst>::try_from(src.min(<$src>::from(<$dst>::MAX)).max(<$src>::from(<$dst>::MIN))).unwrap()
                 }
             }
@@ -59,14 +60,14 @@ macro_rules! impl_clamp {
     };
 }
 
-impl_clamp!([u128, i128, u64, i64, u32, i32, u16, i16] => u8);
-impl_clamp!([u128, i128, u64, i64, u32, i32] => u16);
-impl_clamp!([u128, i128, u64, i64] => u32);
-impl_clamp!([u128, i128] => u64);
+impl_clamp!([i16, u16, i32, u32, i64, u64, i128, u128] => u8);
+impl_clamp!([i32, u32, i64, u64, i128, u128] => u16);
+impl_clamp!([i64, u64, i128, u128] => u32);
+impl_clamp!([i128, u128] => u64);
 
-impl_clamp!([i128, i64, i32, i16] => i8);
-impl_clamp!([i128, i64, i32] => i16);
-impl_clamp!([i128, i64] => i32);
+impl_clamp!([i16, i32, i64, i128] => i8);
+impl_clamp!([i32, i64, i128] => i16);
+impl_clamp!([i64, i128] => i32);
 impl_clamp!([i128] => i64);
 
 macro_rules! impl_clamp_unsigned {
@@ -76,17 +77,18 @@ macro_rules! impl_clamp_unsigned {
                 #[inline]
                 fn saturating_from(src: $src) -> $dst {
                     use core::convert::TryFrom;
-                    <$dst>::try_from(src.min(<$dst>::MAX as $src)).unwrap()
+                    // try_from(..).unwrap() is optimised out (tested on 1.78 with opt-level=2)
+                    <$dst>::try_from(src.min(<$src>::try_from(<$dst>::MAX).unwrap())).unwrap()
                 }
             }
         )+
     };
 }
 
-impl_clamp_unsigned!([u128, u64, u32, u16, u8] => i8);
-impl_clamp_unsigned!([u128, u64, u32, u16] => i16);
-impl_clamp_unsigned!([u128, u64, u32] => i32);
-impl_clamp_unsigned!([u128, u64] => i64);
+impl_clamp_unsigned!([u8, u16, u32, u64, u128] => i8);
+impl_clamp_unsigned!([u16, u32, u64, u128] => i16);
+impl_clamp_unsigned!([u32, u64, u128] => i32);
+impl_clamp_unsigned!([u64, u128] => i64);
 impl_clamp_unsigned!([u128] => i128);
 impl_clamp_unsigned!([usize] => isize);
 
@@ -97,6 +99,7 @@ macro_rules! impl_clamp_signed {
                 #[inline]
                 fn saturating_from(src: $src) -> $dst {
                     use core::convert::TryFrom;
+                    // try_from(..).unwrap() is optimised out (tested on 1.78 with opt-level=2)
                     <$dst>::try_from(src.max(0)).unwrap()
                 }
             }
@@ -105,10 +108,10 @@ macro_rules! impl_clamp_signed {
 }
 
 impl_clamp_signed!([i8] => u8);
-impl_clamp_signed!([i16, i8] => u16);
-impl_clamp_signed!([i32, i16, i8] => u32);
-impl_clamp_signed!([i64, i32, i16, i8] => u64);
-impl_clamp_signed!([i128, i64, i32, i16, i8] => u128);
+impl_clamp_signed!([i8, i16] => u16);
+impl_clamp_signed!([i8, i16, i32] => u32);
+impl_clamp_signed!([i8, i16, i32, i64] => u64);
+impl_clamp_signed!([i8, i16, i32, i64, i128] => u128);
 impl_clamp_signed!([isize] => usize);
 
 macro_rules! impl_gt_zero {
@@ -124,7 +127,7 @@ macro_rules! impl_gt_zero {
     };
 }
 
-impl_gt_zero!([usize, isize, u128, i128, u64, i64, u32, i32, u16, i16, u8, i8] => bool);
+impl_gt_zero!([i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, isize, usize] => bool);
 
 macro_rules! impl_gt_zero_float {
     ([$($src:ty),+] => $dst:ty) => {
@@ -155,8 +158,8 @@ macro_rules! impl_as {
 }
 
 // `as` will round to nearest (and saturate at f32::INFINITY for `u128` => f32)
-impl_as!([u128, i128, u64, i64, u32, i32] => f32);
-impl_as!([u128, i128, u64, i64] => f64);
+impl_as!([i32, u32, i64, u64, i128, u128] => f32);
+impl_as!([i64, u64, i128, u128] => f64);
 impl_as!([f64] => f32);
 
 // `as` will saturate and convert NaN => 0 since 1.45 (see: rust-lang/rust#10184)
@@ -222,69 +225,69 @@ compile_error!("Unsupported target_pointer_width setting");
 mod size {
     use crate::SaturatingFrom;
 
-    impl_equivalent!([usize as u16, isize as i16] => i8);
-    impl_equivalent!([usize as u16, isize as i16] => i16);
-    impl_equivalent!([usize as u16, isize as i16] => i32);
-    impl_equivalent!([usize as u16, isize as i16] => i64);
-    impl_equivalent!([usize as u16, isize as i16] => i128);
+    impl_equivalent!([isize as i16, usize as u16] => i8);
+    impl_equivalent!([isize as i16, usize as u16] => i16);
+    impl_equivalent!([isize as i16, usize as u16] => i32);
+    impl_equivalent!([isize as i16, usize as u16] => i64);
+    impl_equivalent!([isize as i16, usize as u16] => i128);
 
-    impl_equivalent!([usize as u16, isize as i16] => u8);
-    impl_equivalent!([usize as u16, isize as i16] => u16);
-    impl_equivalent!([usize as u16, isize as i16] => u32);
-    impl_equivalent!([usize as u16, isize as i16] => u64);
-    impl_equivalent!([usize as u16, isize as i16] => u128);
+    impl_equivalent!([isize as i16, usize as u16] => u8);
+    impl_equivalent!([isize as i16, usize as u16] => u16);
+    impl_equivalent!([isize as i16, usize as u16] => u32);
+    impl_equivalent!([isize as i16, usize as u16] => u64);
+    impl_equivalent!([isize as i16, usize as u16] => u128);
 
-    impl_equivalent!([usize as u16, isize as i16] => f32);
-    impl_equivalent!([usize as u16, isize as i16] => f64);
+    impl_equivalent!([isize as i16, usize as u16] => f32);
+    impl_equivalent!([isize as i16, usize as u16] => f64);
 
-    impl_equivalent!([f64, f32, u128, i128, u64, i64, u32, i32, u16, i16, u8, i8, bool] => usize as u16);
-    impl_equivalent!([f64, f32, u128, i128, u64, i64, u32, i32, u16, i16, u8, i8, bool] => isize as i16);
+    impl_equivalent!([bool, i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, f32, f64] => usize as u16);
+    impl_equivalent!([bool, i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, f32, f64] => isize as i16);
 }
 
 #[cfg(target_pointer_width = "32")]
 mod size {
     use crate::SaturatingFrom;
 
-    impl_equivalent!([usize as u32, isize as i32] => i8);
-    impl_equivalent!([usize as u32, isize as i32] => i16);
-    impl_equivalent!([usize as u32, isize as i32] => i32);
-    impl_equivalent!([usize as u32, isize as i32] => i64);
-    impl_equivalent!([usize as u32, isize as i32] => i128);
+    impl_equivalent!([isize as i32, usize as u32] => i8);
+    impl_equivalent!([isize as i32, usize as u32] => i16);
+    impl_equivalent!([isize as i32, usize as u32] => i32);
+    impl_equivalent!([isize as i32, usize as u32] => i64);
+    impl_equivalent!([isize as i32, usize as u32] => i128);
 
-    impl_equivalent!([usize as u32, isize as i32] => u8);
-    impl_equivalent!([usize as u32, isize as i32] => u16);
-    impl_equivalent!([usize as u32, isize as i32] => u32);
-    impl_equivalent!([usize as u32, isize as i32] => u64);
-    impl_equivalent!([usize as u32, isize as i32] => u128);
+    impl_equivalent!([isize as i32, usize as u32] => u8);
+    impl_equivalent!([isize as i32, usize as u32] => u16);
+    impl_equivalent!([isize as i32, usize as u32] => u32);
+    impl_equivalent!([isize as i32, usize as u32] => u64);
+    impl_equivalent!([isize as i32, usize as u32] => u128);
 
-    impl_equivalent!([usize as u32, isize as i32] => f32);
-    impl_equivalent!([usize as u32, isize as i32] => f64);
+    impl_equivalent!([isize as i32, usize as u32] => f32);
+    impl_equivalent!([isize as i32, usize as u32] => f64);
 
-    impl_equivalent!([f64, f32, u128, i128, u64, i64, u32, i32, u16, i16, u8, i8, bool] => usize as u32);
-    impl_equivalent!([f64, f32, u128, i128, u64, i64, u32, i32, u16, i16, u8, i8, bool] => isize as i32);
+    impl_equivalent!([bool, i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, f32, f64] => usize as u32);
+    impl_equivalent!([bool, i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, f32, f64] => isize as i32);
 }
 
 #[cfg(target_pointer_width = "64")]
 mod size {
     use crate::SaturatingFrom;
 
-    impl_equivalent!([usize as u64, isize as i64] => i8);
-    impl_equivalent!([usize as u64, isize as i64] => i16);
-    impl_equivalent!([usize as u64, isize as i64] => i32);
-    impl_equivalent!([usize as u64, isize as i64] => i64);
-    impl_equivalent!([usize as u64, isize as i64] => i128);
+    impl_equivalent!([isize as i64, usize as u64] => i8);
+    impl_equivalent!([isize as i64, usize as u64] => i16);
+    impl_equivalent!([isize as i64, usize as u64] => i32);
+    impl_equivalent!([isize as i64, usize as u64] => i64);
+    impl_equivalent!([isize as i64, usize as u64] => i128);
 
-    impl_equivalent!([usize as u64, isize as i64] => u8);
-    impl_equivalent!([usize as u64, isize as i64] => u16);
-    impl_equivalent!([usize as u64, isize as i64] => u32);
-    impl_equivalent!([usize as u64, isize as i64] => u64);
-    impl_equivalent!([usize as u64, isize as i64] => u128);
+    impl_equivalent!([isize as i64, usize as u64] => u8);
+    impl_equivalent!([isize as i64, usize as u64] => u16);
+    impl_equivalent!([isize as i64, usize as u64] => u32);
+    impl_equivalent!([isize as i64, usize as u64] => u64);
+    impl_equivalent!([isize as i64, usize as u64] => u128);
 
-    impl_equivalent!([usize as u64, isize as i64] => f32);
-    impl_equivalent!([usize as u64, isize as i64] => f64);
+    impl_equivalent!([isize as i64, usize as u64] => f32);
+    impl_equivalent!([isize as i64, usize as u64] => f64);
 
-    impl_equivalent!([f64, f32, u128, i128, u64, i64, u32, i32, u16, i16, u8, i8, bool] => usize as u64);
-    impl_equivalent!([f64, f32, u128, i128, u64, i64, u32, i32, u16, i16, u8, i8, bool] => isize as i64);
+    impl_equivalent!([bool, i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, f32, f64] => usize as u64);
+    impl_equivalent!([bool, i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, f32, f64] => isize as i64);
 }
 
 pub trait SaturatingInto<T> {
@@ -301,8 +304,11 @@ where
     }
 }
 
+#[allow(clippy::bool_assert_comparison)]
 #[cfg(test)]
 mod tests {
+    use isclose::assert_is_close;
+
     use super::*;
 
     #[test]
@@ -321,6 +327,7 @@ mod tests {
             };
         }
 
+        // Will fail to compile if any permutation is not implemented
         check_impls!(
             f64, f32, usize, isize, u128, i128, u64, i64, u32, i32, u16, i16, u8, i8, bool
         );
@@ -328,32 +335,95 @@ mod tests {
 
     #[test]
     fn impl_self() {
-        let bool = true;
-        let u8 = 5u8;
-        let i8 = -12i8;
-        let u16 = 65u16;
-        let i16 = -700i16;
-        let u32 = 19829u32;
-        let i32 = 680157i32;
-        let u64 = 687243576u64;
-        let i64 = -67516716i64;
-        let u128 = 6879266981669u128;
-        let i128 = 79826986429864i128;
-        let usize = 6791usize;
-        let isize = 5687isize;
+        assert_eq!(true, bool::saturating_from(true));
+        assert_eq!(19829u32, u32::saturating_from(19829u32));
+        assert_eq!(-67516716i64, i64::saturating_from(-67516716i64));
+        assert_eq!(6791usize, usize::saturating_from(6791usize));
+    }
 
-        assert_eq!(bool, bool::saturating_from(bool));
-        assert_eq!(u8, u8::saturating_from(u8));
-        assert_eq!(i8, i8::saturating_from(i8));
-        assert_eq!(u16, u16::saturating_from(u16));
-        assert_eq!(i16, i16::saturating_from(i16));
-        assert_eq!(u32, u32::saturating_from(u32));
-        assert_eq!(i32, i32::saturating_from(i32));
-        assert_eq!(u64, u64::saturating_from(u64));
-        assert_eq!(i64, i64::saturating_from(i64));
-        assert_eq!(u128, u128::saturating_from(u128));
-        assert_eq!(i128, i128::saturating_from(i128));
-        assert_eq!(usize, usize::saturating_from(usize));
-        assert_eq!(isize, isize::saturating_from(isize));
+    #[test]
+    fn impl_from() {
+        assert_eq!(0u8, u8::saturating_from(false));
+        assert_eq!(1u64, u64::saturating_from(true));
+        assert_eq!(24635u32, u32::saturating_from(24635u16));
+        assert_eq!(204835u128, u128::saturating_from(204835u32));
+        assert_eq!(7435637u64, u64::saturating_from(7435637u32));
+        assert_eq!(-1617i32, i32::saturating_from(-1617i16));
+        assert_eq!(1i128, i128::saturating_from(true));
+        assert_eq!(15678i32, i32::saturating_from(15678u16));
+
+        assert_is_close!(16980.0f32, f32::saturating_from(16980u16));
+        assert_is_close!(2679.0f64, f64::saturating_from(2679i32));
+        assert_is_close!(27696792.0f64, f64::saturating_from(27696792u32));
+        assert_is_close!(0.5f64, f64::saturating_from(0.5f32));
+        assert!(f64::saturating_from(f32::NAN).is_nan());
+        assert!(f64::saturating_from(f32::INFINITY).is_infinite());
+    }
+
+    #[test]
+    fn impl_clamp() {
+        assert_eq!(0u8, u8::saturating_from(-26i16));
+        assert_eq!(0xffffu16, u16::saturating_from(1265431463u32));
+        assert_eq!(76u8, u8::saturating_from(76i128));
+        assert_eq!(-0x80i8, i8::saturating_from(-296078i32));
+        assert_eq!(-0x80000000i32, i32::saturating_from(-125431462564574573i64));
+        assert_eq!(-12i8, i8::saturating_from(-12i64));
+    }
+
+    #[test]
+    fn impl_clamp_unsigned() {
+        assert_eq!(0x7fi8, i8::saturating_from(60954u16));
+        assert_eq!(0x7fffi16, i16::saturating_from(61025u16));
+        assert_eq!(62879i32, i32::saturating_from(62879u128));
+    }
+
+    #[test]
+    fn impl_clamp_signed() {
+        assert_eq!(0u8, u8::saturating_from(-12i8));
+        assert_eq!(0u16, u16::saturating_from(-294865i32));
+        assert_eq!(62879u32, u32::saturating_from(62879i128));
+    }
+
+    #[test]
+    fn impl_gt_zero() {
+        assert_eq!(false, bool::saturating_from(-12i8));
+        assert_eq!(false, bool::saturating_from(-294865i32));
+        assert_eq!(true, bool::saturating_from(62879i128));
+
+        assert_eq!(false, bool::saturating_from(-12.0f32));
+        assert_eq!(true, bool::saturating_from(2.0f64));
+        assert_eq!(false, bool::saturating_from(f64::NEG_INFINITY));
+        assert_eq!(true, bool::saturating_from(f32::INFINITY));
+
+        // NAN always converts to false. Consistent with integers where NAN becomes 0
+        assert_eq!(false, bool::saturating_from(f32::NAN));
+        assert_eq!(false, bool::saturating_from(-f64::NAN));
+    }
+
+    #[test]
+    fn impl_as() {
+        assert_is_close!(3.0f32, f32::saturating_from(3i64));
+        assert_is_close!(461573.0f64, f64::saturating_from(461573i32));
+        assert_eq!(4294967300.0f32, f32::saturating_from(4294967295u32)); // nearest
+        assert!(f32::saturating_from(u128::MAX).is_infinite()); // out of range => infinity
+
+        assert_is_close!(15.6f32, f32::saturating_from(15.6f64));
+        assert_eq!(0.0f32, f32::saturating_from(1e-60)); // nearest
+        assert!(f32::saturating_from(1e40f64).is_infinite()); // out of range => infinity
+        assert!(f32::saturating_from(f64::NEG_INFINITY).is_infinite());
+        assert!(f32::saturating_from(f64::NAN).is_nan());
+
+        assert_eq!(0xffu8, u8::saturating_from(935.0f32));
+        assert_eq!(0u16, u16::saturating_from(-2.0f64));
+        assert_eq!(-0x8000i16, i16::saturating_from(-1e20));
+        assert_eq!(0i16, i16::saturating_from(-1e-20));
+        assert_eq!(u128::MAX, u128::saturating_from(f32::INFINITY));
+        assert_eq!(0i32, i32::saturating_from(f64::NAN));
+    }
+
+    #[test]
+    fn impl_bool_float() {
+        assert_eq!(1.0f32, f32::saturating_from(true));
+        assert_eq!(0.0f64, f64::saturating_from(false));
     }
 }
