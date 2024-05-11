@@ -42,8 +42,8 @@ impl_from!([u16, i16, u8, i8, bool] => i32);
 impl_from!([u32, i32, u16, i16, u8, i8, bool] => i64);
 impl_from!([u64, i64, u32, i32, u16, i16, u8, i8, bool] => i128);
 
-impl_from!([u16, i16, u8, i8, bool] => f32);
-impl_from!([f32, u32, i32, u16, i16, u8, i8, bool] => f64);
+impl_from!([u16, i16, u8, i8] => f32);
+impl_from!([f32, u32, i32, u16, i16, u8, i8] => f64);
 
 macro_rules! impl_clamp {
     ([$($src:ty),+] => $dst:ty) => {
@@ -171,6 +171,21 @@ impl_as!([f32, f64] => i16);
 impl_as!([f32, f64] => i32);
 impl_as!([f32, f64] => i64);
 impl_as!([f32, f64] => i128);
+
+macro_rules! impl_bool_float {
+    ($($dst:ty),+) => {
+        $(
+            impl SaturatingFrom<bool> for $dst {
+                #[inline]
+                fn saturating_from(src: bool) -> $dst {
+                    <$dst>::from(u8::from(src))
+                }
+            }
+        )+
+    };
+}
+
+impl_bool_float!(f32, f64);
 
 macro_rules! impl_equivalent {
     ([$($src:ty as $equ:ty),+] => $dst:ty) => {
