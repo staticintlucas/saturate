@@ -338,9 +338,13 @@ where
 #[allow(clippy::bool_assert_comparison)]
 #[cfg(test)]
 mod tests {
-    use isclose::assert_is_close;
-
     use super::*;
+
+    macro_rules! assert_is_close {
+        ($lhs:expr, $rhs:expr $(,)?) => {
+            assert!(($lhs - $rhs).abs() < 1e-6)
+        };
+    }
 
     #[test]
     fn has_impl() {

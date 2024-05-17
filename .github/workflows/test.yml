@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, '1.60'] # 1.60 is the MSRV of our dev-dependencies
+        rust: [stable, '1.45']
     steps:
     - name: Checkout
       uses: actions/checkout@v4
