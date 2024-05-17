@@ -15,7 +15,7 @@ mirroring the standard library's `From` and `Into` traits.
 
 ## Example
 
-```Rust
+```rust
 use saturate::{SaturatingFrom, SaturatingInto};
 
 assert_eq!(0, u8::saturating_from(-26));
