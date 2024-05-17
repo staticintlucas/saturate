@@ -7,21 +7,21 @@
 [actions]: https://github.com/staticintlucas/saturate/actions?query=branch%3Amain
 [crates]: https://crates.io/crates/saturate
 
-This crate provides a set of traits for saturating conversion between different numeric types
-without resorting to `as`.
+This crate provides a set of traits for saturating conversion between different numeric types.
 
-The trait `SaturatingFrom` is implemented by default for all numeric types.
+The trait [`SaturatingFrom`] is implemented by default for all standard numeric types.
+A blanket implementation of [`SaturatingInto`] is also provided,
+mirroring the standard library's [`From`] and [`Into`] traits.
 
-<!-- Additional implementations are also hidden behind the following features:
+## Example
 
-- `half` implements `SaturatingFrom` for [half]'s `f16` and `bf16`
+```Rust
+use saturate::{SaturatingFrom, SaturatingInto};
 
-[half]: https://crates.io/crates/half -->
-
-## Usage:
-
-```
-// TODO
+assert_eq!(0, u8::saturating_from(-26));
+assert_eq!(u32::MAX, i64::MAX.saturating_into());
+assert!(f32::saturating_from(u128::MAX).is_infinite()); // out of range => infinity
+assert_eq!(u8::MAX, 300.0.saturating_into());
 ```
 
 ## Licence

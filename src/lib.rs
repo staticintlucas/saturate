@@ -1,5 +1,29 @@
+//! This crate provides a set of traits for saturating conversion between
+//! different numeric types.
+//!
+//! The trait [`SaturatingFrom`] is implemented by default for all standard
+//! numeric types. A blanket implementation of [`SaturatingInto`] is also
+//! provided, mirroring the standard library's [`From`] and [`Into`] traits.
+//!
+//! ## Example
+//! ```
+//! use saturate::{SaturatingFrom, SaturatingInto};
+//!
+//! assert_eq!(0, u8::saturating_from(-26));
+//! assert_eq!(u32::MAX, i64::MAX.saturating_into());
+//! assert!(f32::saturating_from(u128::MAX).is_infinite()); // out of range => infinity
+//! assert_eq!(u8::MAX, 300.0.saturating_into());
+//! ```
+
+/// Trait to perform a saturating conversion between two numeric types. It is
+/// the opposite of [`SaturatingInto`].
+///
+/// [`SaturatingFrom`] should always be implemented directly; this will also
+/// automatically provide an implementation of [`SaturatingInto`] thanks to its
+/// blanket implementation.
 pub trait SaturatingFrom<T> {
-    fn saturating_from(src: T) -> Self;
+    /// Converts the input type `T` to `Self`
+    fn saturating_from(value: T) -> Self;
 }
 
 macro_rules! impl_self {
@@ -7,8 +31,8 @@ macro_rules! impl_self {
         $(
             impl SaturatingFrom<$typ> for $typ {
                 #[inline]
-                fn saturating_from(src: $typ) -> $typ {
-                    src
+                fn saturating_from(value: $typ) -> $typ {
+                    value
                 }
             }
         )+
@@ -22,8 +46,8 @@ macro_rules! impl_from {
         $(
             impl SaturatingFrom<$src> for $dst {
                 #[inline]
-                fn saturating_from(src: $src) -> $dst {
-                    <$dst>::from(src)
+                fn saturating_from(value: $src) -> $dst {
+                    <$dst>::from(value)
                 }
             }
         )+
@@ -50,10 +74,10 @@ macro_rules! impl_clamp {
         $(
             impl SaturatingFrom<$src> for $dst {
                 #[inline]
-                fn saturating_from(src: $src) -> $dst {
+                fn saturating_from(value: $src) -> $dst {
                     use core::convert::TryFrom;
                     // try_from(..).unwrap() is optimised out (tested on 1.78 with opt-level=2)
-                    <$dst>::try_from(src.min(<$src>::from(<$dst>::MAX)).max(<$src>::from(<$dst>::MIN))).unwrap()
+                    <$dst>::try_from(value.min(<$src>::from(<$dst>::MAX)).max(<$src>::from(<$dst>::MIN))).unwrap()
                 }
             }
         )+
@@ -75,10 +99,10 @@ macro_rules! impl_clamp_unsigned {
         $(
             impl SaturatingFrom<$src> for $dst {
                 #[inline]
-                fn saturating_from(src: $src) -> $dst {
+                fn saturating_from(value: $src) -> $dst {
                     use core::convert::TryFrom;
                     // try_from(..).unwrap() is optimised out (tested on 1.78 with opt-level=2)
-                    <$dst>::try_from(src.min(<$src>::try_from(<$dst>::MAX).unwrap())).unwrap()
+                    <$dst>::try_from(value.min(<$src>::try_from(<$dst>::MAX).unwrap())).unwrap()
                 }
             }
         )+
@@ -97,10 +121,10 @@ macro_rules! impl_clamp_signed {
         $(
             impl SaturatingFrom<$src> for $dst {
                 #[inline]
-                fn saturating_from(src: $src) -> $dst {
+                fn saturating_from(value: $src) -> $dst {
                     use core::convert::TryFrom;
                     // try_from(..).unwrap() is optimised out (tested on 1.78 with opt-level=2)
-                    <$dst>::try_from(src.max(0)).unwrap()
+                    <$dst>::try_from(value.max(0)).unwrap()
                 }
             }
         )+
@@ -119,8 +143,8 @@ macro_rules! impl_gt_zero {
         $(
             impl SaturatingFrom<$src> for $dst {
                 #[inline]
-                fn saturating_from(src: $src) -> $dst {
-                    src > 0
+                fn saturating_from(value: $src) -> $dst {
+                    value > 0
                 }
             }
         )+
@@ -134,8 +158,8 @@ macro_rules! impl_gt_zero_float {
         $(
             impl SaturatingFrom<$src> for $dst {
                 #[inline]
-                fn saturating_from(src: $src) -> $dst {
-                    src > 0.0
+                fn saturating_from(value: $src) -> $dst {
+                    value > 0.0
                 }
             }
         )+
@@ -149,8 +173,8 @@ macro_rules! impl_as {
         $(
             impl SaturatingFrom<$src> for $dst {
                 #[inline]
-                fn saturating_from(src: $src) -> $dst {
-                    src as $dst
+                fn saturating_from(value: $src) -> $dst {
+                    value as $dst
                 }
             }
         )+
@@ -180,8 +204,8 @@ macro_rules! impl_bool_float {
         $(
             impl SaturatingFrom<bool> for $dst {
                 #[inline]
-                fn saturating_from(src: bool) -> $dst {
-                    <$dst>::from(u8::from(src))
+                fn saturating_from(value: bool) -> $dst {
+                    <$dst>::from(u8::from(value))
                 }
             }
         )+
@@ -195,8 +219,8 @@ macro_rules! impl_equivalent {
         $(
             impl SaturatingFrom<$src> for $dst {
                 #[inline]
-                fn saturating_from(src: $src) -> $dst {
-                    <$dst>::saturating_from(src as $equ)
+                fn saturating_from(value: $src) -> $dst {
+                    <$dst>::saturating_from(value as $equ)
                 }
             }
         )+
@@ -205,8 +229,8 @@ macro_rules! impl_equivalent {
         $(
             impl SaturatingFrom<$src> for $dst {
                 #[inline]
-                fn saturating_from(src: $src) -> $dst {
-                    <$equ>::saturating_from(src) as $dst
+                fn saturating_from(value: $src) -> $dst {
+                    <$equ>::saturating_from(value) as $dst
                 }
             }
         )+
@@ -290,7 +314,14 @@ mod size {
     impl_equivalent!([bool, i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, f32, f64] => isize as i64);
 }
 
+/// Trait to perform a saturating conversion between two numeric types. It is
+/// the opposite of [`SaturatingFrom`].
+///
+/// [`SaturatingFrom`] should always be implemented directly; this will also
+/// automatically provide an implementation of [`SaturatingInto`] thanks to its
+/// blanket implementation.
 pub trait SaturatingInto<T> {
+    /// Converts `self` to the (usually inferred) type `T`
     fn saturating_into(self) -> T;
 }
 
