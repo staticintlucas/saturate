@@ -9,9 +9,9 @@
 
 This crate provides a set of traits for saturating conversion between different numeric types.
 
-The trait [`SaturatingFrom`] is implemented by default for all standard numeric types.
-A blanket implementation of [`SaturatingInto`] is also provided,
-mirroring the standard library's [`From`] and [`Into`] traits.
+The trait `SaturatingFrom` is implemented by default for all standard numeric types.
+A blanket implementation of `SaturatingInto` is also provided,
+mirroring the standard library's `From` and `Into` traits.
 
 ## Example
 
